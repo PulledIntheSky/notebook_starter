@@ -42,6 +42,7 @@ jobs:
             mkdir -p /tmp/screenshots && \
             sleep 20 && \
             DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/screenshot.png ${NGROK_URL} && \
+            cat /tmp/screenshots/screenshot.png && \
             mv /tmp/screenshots/*.png /tmp/screenshots/"
           sleep 30  # Ensure the container has enough time to take the screenshot
 
@@ -56,7 +57,7 @@ jobs:
         run: ls -R screenshots
 
       # Step to save screenshots as artifacts if they exist
-      - name: Upload Artifacts
+        - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
