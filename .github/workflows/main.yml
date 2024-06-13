@@ -22,11 +22,12 @@ jobs:
         run: |
           for ((i=1; i<=50; i++)); do
             docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
-              mkdir -p /screenshots && \
-              cd /screenshots && \
+              mkdir -p /tmp/screenshots && \
+              cd /tmp/screenshots && \
               wget -q https://www.whatismyipaddress.com -O index.html && \
               sleep 6 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot $(date +%s)_screenshot.png"
+              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot $(date +%s)_screenshot.png && \
+              mv *.png /screenshots/"
           done
 
       # Step to wait for containers to finish capturing screenshots
