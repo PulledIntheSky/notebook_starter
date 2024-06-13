@@ -16,9 +16,7 @@ jobs:
       # Step to start Docker containers with Selenium and capture screenshots
       - name: Run Docker containers
         run: |
-          # Loop to start 50 Docker containers
           for ((i=1; i<=50; i++)); do
-            # Start Docker container with custom IP and run Selenium script
             docker run -d --name container_$i --ip 172.18.0.$i your_docker_image bash -c "\
               mkdir -p /screenshots && \
               cd /screenshots && \
@@ -29,7 +27,7 @@ jobs:
 
       # Step to wait for containers to finish capturing screenshots
       - name: Wait for containers to complete
-        run: sleep 60  # Adjust as needed based on how long you expect containers to run
+        run: sleep 60
 
       # Step to save screenshots as artifacts
       - name: Upload Artifacts
