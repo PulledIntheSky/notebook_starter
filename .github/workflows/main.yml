@@ -15,7 +15,7 @@ jobs:
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
-        run: mkdir -p screenshots
+        run: mkdir -p $HOME/screenshots
 
       # Step to start Docker containers with Selenium and capture screenshots
       - name: Run Docker containers
@@ -26,8 +26,8 @@ jobs:
               cd /tmp/screenshots && \
               wget -q https://www.whatismyipaddress.com -O index.html && \
               sleep 6 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot --window-size=1920,1080 $(date +%s)_screenshot.png && \
-              mv *.png /tmp/screenshots/"
+              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot=/tmp/screenshots/$(date +%s)_screenshot.png https://www.whatismyipaddress.com && \
+              mv /tmp/screenshots/*.png /tmp/screenshots/"
           done
 
       # Step to wait for containers to finish capturing screenshots
@@ -37,12 +37,11 @@ jobs:
       # Step to move screenshots from each container to host machine
       - name: Move screenshots to host
         run: |
-          mkdir -p $HOME/screenshots  # Ensure screenshots directory exists locally
           for ((i=1; i<=50; i++)); do
             docker cp container_$i:/tmp/screenshots/. $HOME/screenshots/container_$i/
           done
 
-      # Step to list files for verification
+      # Step to list screenshots for verification
       - name: List screenshots
         run: ls -R $HOME/screenshots
 
@@ -52,5 +51,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: screenshots
+          path: $HOME/screenshots
           if-no-files-found: error  # Fail workflow if no files are found
