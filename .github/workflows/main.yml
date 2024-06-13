@@ -30,6 +30,7 @@ jobs:
               bash -c "\
                 mkdir -p /tmp/screenshots && \
                 cd /tmp/screenshots && \
+                mkdir -p /screenshots/puppeteer_$i && \
                 node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ \
@@ -38,8 +39,9 @@ jobs:
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(10000); // Wait for 10 seconds \
-                            await page.screenshot({ path: \"/screenshots/screenshot.png\" }); \
-                            await page.waitForTimeout(4000); // Wait for 4 seconds \
+                            await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
+                            await page.waitForTimeout(5000); // Wait for 5 seconds \
+                            console.log(\"Screenshot saved for container $i\"); \
                             await browser.close(); \
                           })();'"
 
@@ -61,7 +63,7 @@ jobs:
               # Ensure screenshots directory exists on host
               mkdir -p screenshots/$container_id
               # Copy screenshot from container to host
-              docker cp $container_id:/screenshots/screenshot.png screenshots/$container_id/
+              docker cp $container_id:/tmp/screenshots/screenshot.png screenshots/$container_id/
             else
               echo "Container $container_id does not exist or is not running."
             fi
