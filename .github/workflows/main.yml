@@ -21,7 +21,7 @@ jobs:
       - name: Run Docker containers
         run: |
           for ((i=1; i<=50; i++)); do
-            docker run -d --rm --name container_$i \
+            docker run -d --name container_$i \
               -v $(pwd)/screenshots:/screenshots \
               alekzonder/puppeteer:latest \
               bash -c "\
@@ -47,7 +47,7 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            # Check if container exists and is running
+            # Check if container exists and is running or stopped
             if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
               # Ensure screenshots directory exists on host
               sudo mkdir -p screenshots/container_$i
