@@ -23,16 +23,18 @@ jobs:
           for ((i=1; i<=50; i++)); do
             # Start Docker container and capture screenshot
             docker run -d --name container_$i \
+              -v $(pwd)/tmp:/tmp \
               alekzonder/puppeteer:latest \
               bash -c "\
-                pwd \
+                mkdir -p /tmp/screenshots && \
+                cd /tmp/screenshots && \
                 node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ headless: true }); \
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(8000); // Wait for 8 seconds
-                            await page.screenshot({ path: \"screenshot_$i.png\" }); \
+                            await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
                             await browser.close(); \
                             console.log(\"Screenshot captured\"); // Log success
                           })();'"
