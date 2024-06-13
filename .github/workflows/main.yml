@@ -15,14 +15,14 @@ jobs:
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
-        run: mkdir -p screenshots
+        run: mkdir -p $HOME/screenshots
 
       # Step to start Docker containers with Selenium and capture screenshots using Puppeteer
       - name: Run Docker containers and capture screenshots
         run: |
           for ((i=1; i<=50; i++)); do
             docker run -d --rm --name container_$i \
-              -v $(pwd)/screenshots:/screenshots \
+              -v $HOME/screenshots:/screenshots \
               alekzonder/puppeteer:latest \
               bash -c "\
                 mkdir -p /tmp/screenshots && \
@@ -42,9 +42,13 @@ jobs:
             sleep 1
           done
 
+      # Step to wait for containers to finish capturing screenshots
+      - name: Wait for containers to complete
+        run: sleep 60
+
       # Step to list screenshots for verification
       - name: List screenshots
-        run: ls -R screenshots
+        run: ls -R $HOME/screenshots
 
       # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
@@ -52,5 +56,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: screenshots
+          path: $HOME/screenshots
           if-no-files-found: error  # Fail workflow if no files are found
