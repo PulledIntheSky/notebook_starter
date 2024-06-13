@@ -47,7 +47,7 @@ jobs:
             # Check if container exists and is running or stopped
             if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
               # Copy screenshot from host /tmp/screenshots to host screenshots
-              mkdir -p screenshots/container_$i
+              sudo mkdir -p screenshots/container_$i
               cp /tmp/screenshots/screenshot_$i.png screenshots/container_$i/
               echo "Screenshot copied from host /tmp/screenshots"
             else
