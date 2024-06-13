@@ -13,11 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      # Step to start Docker containers with Selenium and capture screenshots
       - name: Run Docker containers
         run: |
           for ((i=1; i<=50; i++)); do
@@ -31,9 +29,9 @@ jobs:
                 from selenium.webdriver.common.by import By; \
                 import time; \
                 options = uc.ChromeOptions(); \
-                options.add_argument("--headless"); \
-                options.add_argument("--no-sandbox"); \
-                options.add_argument("--disable-dev-shm-usage"); \
+                options.add_argument(\"--headless\"); \
+                options.add_argument(\"--no-sandbox\"); \
+                options.add_argument(\"--disable-dev-shm-usage\"); \
                 driver = uc.Chrome(options=options); \
                 driver.get(\"https://www.whatismyipaddress.com\"); \
                 time.sleep(10); \
@@ -42,24 +40,20 @@ jobs:
                 echo 'Screenshot taken for container_$i' && \
                 ls -l /tmp/screenshots"
           done
-          sleep 120  # Ensure all containers have enough time to take the screenshots
+          sleep 120
 
-      # Step to move screenshots from each container to host machine
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            mkdir -p screenshots/container_$i  # Ensure directory exists
             docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
           done
 
-      # Step to list screenshots for verification
       - name: List screenshots
         run: ls -R screenshots
 
-      # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
           path: screenshots
-          if-no-files-found: error  # Fail workflow if no files are found
+          if-no-files-found: error
