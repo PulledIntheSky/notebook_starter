@@ -1,45 +1,67 @@
-name: Firefox Screenshot
+name: Docker Selenium Screenshots with Puppeteer
 
 on:
   push:
     branches:
-      - main  # Adjust branch name as needed
+      - main
 
 jobs:
-  take_screenshot:
+  run_containers:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2r
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      # Step to create screenshots directory (if not exists)
+      - name: Create screenshots directory
+        run: mkdir -p screenshots
 
-      - name: Build the Docker image
-        run: docker build -t firefox-container .
-
-      - name: Run Firefox in Docker
+      # Step to start Docker containers with Selenium and capture screenshots using Puppeteer
+      - name: Run Docker containers
         run: |
-          docker run -d --rm \
-            --name firefox \
-            -e DISPLAY=:99 \
-            -v /tmp/.X11-unix:/tmp/.X11-unix \
-            firefox-container
+          for ((i=1; i<=50; i++)); do
+            docker run -d --rm --name container_$i \
+              -v $(pwd)/screenshots:/screenshots \
+              alekzonder/puppeteer:latest \
+              bash -c "\
+                mkdir -p /tmp/screenshots && \
+                cd /tmp/screenshots && \
+                sleep 10 && \
+                node -e 'const puppeteer = require(\"puppeteer-extra\"); \
+                          const StealthPlugin = require(\"puppeteer-extra-plugin-stealth\"); \
+                          puppeteer.use(StealthPlugin()); \
+                          (async () => { \
+                            const browser = await puppeteer.launch(); \
+                            const page = await browser.newPage(); \
+                            await page.goto(\"https://www.whatismyipaddress.com\"); \
+                            await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
+                            await browser.close(); \
+                          })();'"
+            sleep 1
+          done
 
-      - name: Wait for Firefox to start
-        run: sleep 10
+      # Step to wait for containers to finish capturing screenshots
+      - name: Wait for containers to complete
+        run: sleep 60
 
-      - name: Take screenshot
+      # Step to move screenshots from each container to host machine
+      - name: Move screenshots to host
         run: |
-          docker exec $(docker ps -qf "name=firefox-container") firefox --screenshot /tmp/screenshot.png https://www.whatismyipaddress.com
-          docker cp $(docker ps -qf "name=firefox-container"):/tmp/screenshot.png ./screenshots/screenshot.png
+          for ((i=1; i<=50; i++)); do
+            mkdir -p screenshots/container_$i  # Ensure container_$i directory exists
+            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
+          done
 
-      - name: Stop and remove Firefox container
-        run: docker stop $(docker ps -qf "name=firefox-container")
+      # Step to list screenshots for verification
+      - name: List screenshots
+        run: ls -R screenshots
 
-      - name: Upload screenshot artifact
+      # Step to save screenshots as artifacts if they exist
+      - name: Upload Artifacts
+        if: success()  # Only run if previous steps were successful
         uses: actions/upload-artifact@v2
         with:
-          name: firefox-screenshot
-          path: screenshots/screenshot.png
+          name: screenshots
+          path: screenshots
+          if-no-files-found: error  # Fail workflow if no files are found
