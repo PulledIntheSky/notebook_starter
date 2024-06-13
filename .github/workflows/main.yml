@@ -49,8 +49,8 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            mkdir -p screenshots/container_$i  # Ensure container_$i directory exists
-            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
+            mkdir -p "screenshots/container_$i"  # Ensure container_$i directory exists
+            docker cp container_$i:/tmp/screenshots/. "screenshots/container_$i/"
           done
 
       # Step to list screenshots for verification
