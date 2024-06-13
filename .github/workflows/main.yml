@@ -13,6 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      # Step to create empty screenshots directory (if not exists)
+      - name: Create screenshots directory
+        run: mkdir -p screenshots
+
       # Step to start Docker containers with Selenium and capture screenshots
       - name: Run Docker containers
         run: |
@@ -22,16 +26,22 @@ jobs:
               cd /screenshots && \
               wget -q https://www.whatismyipaddress.com -O index.html && \
               sleep 6 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot screenshot_$i.png"
+              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot $(date +%s)_screenshot.png"
           done
 
       # Step to wait for containers to finish capturing screenshots
       - name: Wait for containers to complete
         run: sleep 60
 
-      # Step to save screenshots as artifacts
+      # Step to move screenshots from each container to host machine
+      - name: Move screenshots to host
+        run: docker cp container_$i:/screenshots/. screenshots/
+
+      # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
+        if: success()  # Only run if previous steps were successful
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: /screenshots
+          path: screenshots
+          if-no-files-found: error  # Fail workflow if no files are found
