@@ -27,7 +27,7 @@ jobs:
               wget -q https://www.whatismyipaddress.com -O index.html && \
               sleep 6 && \
               DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot $(date +%s)_screenshot.png && \
-              mv *.png /screenshots/"
+              mv *.png /tmp/screenshots/"
           done
 
       # Step to wait for containers to finish capturing screenshots
@@ -38,7 +38,7 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            docker cp container_$i:/screenshots $HOME/screenshots/container_$i
+            docker cp container_$i:/tmp/screenshots $HOME/screenshots/container_$i
           done
 
       # Step to save screenshots as artifacts if they exist
