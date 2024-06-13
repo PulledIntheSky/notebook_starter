@@ -25,7 +25,7 @@ jobs:
               mkdir -p /tmp/screenshots && \
               cd /tmp/screenshots && \
               wget -q https://www.whatismyipaddress.com -O index.html && \
-              sleep 36 && \  # Adjusted to wait 10 seconds before taking screenshot
+              sleep 46 && \  # Adjusted to wait 10 seconds before taking screenshot
               DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot=/tmp/screenshots/$(date +%s)_screenshot.png https://www.whatismyipaddress.com && \
               mv /tmp/screenshots/*.png /tmp/screenshots/"
           done
