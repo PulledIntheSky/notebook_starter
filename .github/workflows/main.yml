@@ -23,7 +23,8 @@ jobs:
           for ((i=1; i<=50; i++)); do
             # Start Docker container and capture screenshot
             docker run -d --name container_$i \
-              -v $(pwd)/tmp:/tmp \
+              -v $(pwd)/screenshots:/screenshots \
+              -v /tmp/screenshots:/tmp/screenshots \
               alekzonder/puppeteer:latest \
               bash -c "\
                 mkdir -p /tmp/screenshots && \
@@ -44,11 +45,10 @@ jobs:
 
             # Check if container exists and is running or stopped
             if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
-              # Ensure screenshots directory exists on host
+              # Copy screenshot from host /tmp/screenshots to host screenshots
               mkdir -p screenshots/container_$i
-              # Copy screenshot from container to host
-              docker cp container_$i:/tmp/screenshots/screenshot_$i.png screenshots/container_$i/
-              echo "Screenshot copied from container_$i"
+              cp /tmp/screenshots/screenshot_$i.png screenshots/container_$i/
+              echo "Screenshot copied from host /tmp/screenshots"
             else
               echo "Container container_$i does not exist or is not running."
             fi
