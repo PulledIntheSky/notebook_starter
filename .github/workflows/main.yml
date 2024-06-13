@@ -15,7 +15,7 @@ jobs:
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
-        run: mkdir -p $HOME/screenshots
+        run: mkdir -p screenshots
 
       # Step to start Docker containers with Selenium and capture screenshots
       - name: Run Docker containers
@@ -38,12 +38,12 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            docker cp container_$i:/tmp/screenshots/. $HOME/screenshots/container_$i/
+            docker cp container_$i:/tmp/screenshots/. /screenshots/container_$i/
           done
 
       # Step to list screenshots for verification
       - name: List screenshots
-        run: ls -R $HOME/screenshots
+        run: ls -R screenshots
 
       # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
@@ -51,5 +51,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: $HOME/screenshots
+          path: screenshots
           if-no-files-found: error  # Fail workflow if no files are found
