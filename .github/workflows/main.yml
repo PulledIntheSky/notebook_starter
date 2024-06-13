@@ -21,7 +21,7 @@ jobs:
 
       - name: Run Docker containers and capture screenshots
         run: |
-          for ((i=1; i<=50; i++)); do
+          for ((i=1; i<=5; i++)); do
             docker run -d --name container_$i \
               -v $(pwd)/screenshots:/screenshots \
               --net=host \
