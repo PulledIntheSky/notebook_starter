@@ -22,7 +22,6 @@ jobs:
         run: |
           for ((i=1; i<=50; i++)); do
             docker run -d --name container_$i \
-              -v $(pwd)/screenshots:/screenshots \
               alekzonder/puppeteer:latest \
               bash -c "\
                 mkdir -p /tmp/screenshots && \
@@ -33,7 +32,7 @@ jobs:
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(8000); // Wait for 8 seconds
-                            await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
+                            await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
                             await browser.close(); \
                           })();'"
           done
@@ -46,10 +45,15 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            # Ensure screenshots directory exists on host
-            sudo mkdir -p screenshots/container_$i
-            # Copy all files from container's /tmp/screenshots/ to host
-            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
+            # Check if container exists and is running or stopped
+            if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
+              # Ensure screenshots directory exists on host
+              sudo mkdir -p screenshots/container_$i
+              # Copy all files from container's /tmp/screenshots/ to host
+              docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
+            else
+              echo "Container container_$i does not exist or is not running."
+            fi
           done
 
       # Step to list screenshots for verification
