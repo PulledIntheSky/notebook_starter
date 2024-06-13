@@ -1,4 +1,4 @@
-name: Docker Puppeteer Screenshots
+name: Docker Tor Browser Screenshots
 
 on:
   push:
@@ -13,52 +13,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Step to create empty screenshots directory (if not exists)
-      - name: Create screenshots directory
-        run: | 
-          mkdir -p tmp/screenshots
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v1
 
-      # Step to start Docker containers with Puppeteer and capture screenshots
+      - name: Create screenshots directory
+        run: mkdir -p screenshots
+
       - name: Run Docker containers and capture screenshots
         run: |
           for ((i=1; i<=50; i++)); do
-            # Start Docker container and capture screenshot
             docker run -d --name container_$i \
               -v $(pwd)/screenshots:/screenshots \
-              -v /tmp/screenshots:/tmp/screenshots \
-              alekzonder/puppeteer:latest \
+              --shm-size=2g \
+              --privileged \
+              jess/tor-browser \
               bash -c "\
-                chmod +x tmp/screenshots \
-                node -e 'const puppeteer = require(\"puppeteer\"); \
-                          (async () => { \
-                            const browser = await puppeteer.launch({ headless: true }); \
-                            const page = await browser.newPage(); \
-                            await page.goto(\"https://www.whatismyipaddress.com\"); \
-                            await page.waitForTimeout(8000); // Wait for 8 seconds
-                            await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
-                            await browser.close(); \
-                            console.log(\"Screenshot captured\"); // Log success
-                          })();'"
+                export DISPLAY=:99 && \
+                Xvfb :99 -screen 0 1024x768x24 & \
+                sleep 5 && \
+                /usr/bin/tor-browser --headless --screenshot https://www.whatismyipaddress.com/ --output /screenshots/screenshot_$i.png && \
+                echo 'Screenshot captured for container_$i'"
 
-            # Delay after Puppeteer operations (adjust as necessary)
-            sleep 10
-
-            # Check if container exists and is running or stopped
-            if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
-              # Copy screenshot from host /tmp/screenshots to host screenshots
-              sudo mkdir -p screenshots/container_$i
-              cp /tmp/screenshots/screenshot_$i.png screenshots/container_$i/
-              echo "Screenshot copied from host /tmp/screenshots"
-            else
-              echo "Container container_$i does not exist or is not running."
-            fi
+            sleep 10  # Adjust as necessary to wait for the screenshot capture
           done
 
-      # Step to list screenshots for verification
       - name: List screenshots
         run: ls -R screenshots
 
-      # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
         if: success()  # Only run if previous steps were successful
         uses: actions/upload-artifact@v2
