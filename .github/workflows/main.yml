@@ -1,4 +1,4 @@
-name: Docker Chrome with Tor Screenshots
+name: Docker Puppeteer with Tor Screenshots
 
 on:
   push:
@@ -26,43 +26,38 @@ jobs:
       - name: Wait for Tor Proxy to Start
         run: sleep 10
 
-      - name: Run Chrome Container and Capture Screenshots
+      - name: Run Puppeteer Container and Capture Screenshots
         run: |
           for ((i=1; i<=50; i++)); do
-            docker run -d --name chrome_$i \
+            docker run -d --name puppeteer_$i \
               -v $(pwd)/screenshots:/screenshots \
               --net=host \
-              --shm-size=2g \
-              zenika/alpine-chrome:latest \
-              google-chrome-stable \
-                --headless \
-                --disable-gpu \
-                --no-sandbox \
-                --disable-dev-shm-usage \
-                --remote-debugging-port=9222 \
-                --disable-software-rasterizer \
-                --disable-setuid-sandbox \
-                --user-data-dir=/tmp/chrome-home \
-                --proxy-server=socks5://localhost:9050 \
-                http://www.whatismyipaddress.com
+              alekzonder/puppeteer:latest \
+              bash -c "\
+                cd /tmp/screenshots && \
+                node -e 'const puppeteer = require(\"puppeteer-extra\"); \
+                          const StealthPlugin = require(\"puppeteer-extra-plugin-stealth\"); \
+                          puppeteer.use(StealthPlugin()); \
+                          (async () => { \
+                            const browser = await puppeteer.launch({ \
+                              headless: true, \
+                              args: [ \
+                                \"--proxy-server=socks5://localhost:9050\", \
+                                \"--no-sandbox\", \
+                                \"--disable-setuid-sandbox\" \
+                              ] \
+                            }); \
+                            const page = await browser.newPage(); \
+                            await page.goto(\"https://www.whatismyipaddress.com\"); \
+                            await page.waitForTimeout(10000); // Wait for 10 seconds \
+                            await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
+                            await browser.close(); \
+                          })();'"
 
-            sleep 10  # Adjust as needed to ensure Chrome connects through Tor
+            sleep 12  # Allow time for Puppeteer to launch and capture screenshot
 
-            docker exec chrome_$i google-chrome-stable \
-              --headless \
-              --disable-gpu \
-              --no-sandbox \
-              --disable-dev-shm-usage \
-              --remote-debugging-port=9222 \
-              --disable-software-rasterizer \
-              --disable-setuid-sandbox \
-              --user-data-dir=/tmp/chrome-home \
-              --proxy-server=socks5://localhost:9050 \
-              --screenshot=/screenshots/screenshot_$i.png \
-              http://www.whatismyipaddress.com
-
-            docker stop chrome_$i
-            docker rm chrome_$i
+            docker cp puppeteer_$i:/tmp/screenshots/screenshot_$i.png screenshots/
+            docker rm -f puppeteer_$i
           done
 
       - name: List screenshots
