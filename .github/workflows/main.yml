@@ -15,7 +15,8 @@ jobs:
 
       # Step to create empty screenshots directory (if not exists)
       - name: Create screenshots directory
-        run: mkdir -p screenshots
+        run: | 
+          mkdir -p tmp/screenshots
 
       # Step to start Docker containers with Puppeteer and capture screenshots
       - name: Run Docker containers and capture screenshots
