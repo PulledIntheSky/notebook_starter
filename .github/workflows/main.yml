@@ -27,9 +27,7 @@ jobs:
               bash -c "\
                 mkdir -p /tmp/screenshots && \
                 cd /tmp/screenshots && \
-                node -e 'const puppeteer = require(\"puppeteer-extra\"); \
-                          const StealthPlugin = require(\"puppeteer-extra-plugin-stealth\"); \
-                          puppeteer.use(StealthPlugin()); \
+                node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ headless: true }); \
                             const page = await browser.newPage(); \
