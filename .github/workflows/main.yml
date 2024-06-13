@@ -23,14 +23,12 @@ jobs:
         id: puppeteer_containers
         run: |
           container_ids=()
-          for ((i=1; i<=5; i++)); do
+          for ((i=1; i<=4; i++)); do
             container_id=$(docker run -d --name puppeteer_$i \
               -v $(pwd)/screenshots:/screenshots \
               alekzonder/puppeteer:latest \
               bash -c "\
                 mkdir -p /tmp/screenshots && \
-                cd /tmp/screenshots && \
-                mkdir -p /screenshots/puppeteer_$i && \
                 node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ \
@@ -43,8 +41,8 @@ jobs:
                             console.log(\"Screenshot saved for container puppeteer_$i\"); \
                             await page.waitForTimeout(4000); // Wait for 4 seconds \
                             await browser.close(); \
-                          })();' 2>&1")
-
+                          })();' && \
+                sleep 30")  # Keep container alive for 30 more seconds
             container_ids+=("$container_id")
           done
 
