@@ -25,8 +25,10 @@ jobs:
       - name: Wait for Tor Proxy to Start
         run: sleep 10
 
-      - name: Run Puppeteer Container and Capture Screenshots
+      - name: Run Puppeteer Containers and Capture Screenshots
+        id: puppeteer_containers
         run: |
+          container_ids=()
           for ((i=1; i<=50; i++)); do
             docker run -d --name puppeteer_$i \
               -v $(pwd)/screenshots:/screenshots \
@@ -52,14 +54,28 @@ jobs:
                             await browser.close(); \
                           })();'"
 
-            # Wait for Puppeteer to capture and save the screenshot
-            sleep 12
+            container_ids+=("puppeteer_$i")
+          done
 
-            # Copy the screenshot from container to host
-            docker cp puppeteer_$i:/tmp/screenshots/screenshot.png screenshots/screenshot_$i.png
+          echo "::set-output name=container_ids::${container_ids[*]}"
 
-            # Remove the Puppeteer container
-            docker rm -f puppeteer_$i
+      - name: Wait for Puppeteer Containers to Finish
+        run: sleep 120  # Adjust as needed based on the expected runtime of Puppeteer processes
+
+      - name: Retrieve Screenshots from Containers
+        run: |
+          container_ids="${{ steps.puppeteer_containers.outputs.container_ids }}"
+
+          for container_id in $container_ids; do
+            # Check if container exists and is running or stopped
+            if docker ps -a --format '{{.Names}}' | grep -Eq "^$container_id$"; then
+              # Ensure screenshots directory exists on host
+              mkdir -p screenshots/$container_id
+              # Copy screenshot from container to host
+              docker cp $container_id:/tmp/screenshots/screenshot.png screenshots/$container_id/
+            else
+              echo "Container $container_id does not exist or is not running."
+            fi
           done
 
       - name: List screenshots
