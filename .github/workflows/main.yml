@@ -31,7 +31,7 @@ jobs:
                           const StealthPlugin = require(\"puppeteer-extra-plugin-stealth\"); \
                           puppeteer.use(StealthPlugin()); \
                           (async () => { \
-                            const browser = await puppeteer.launch(); \
+                            const browser = await puppeteer.launch({ headless: true }); \
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(8000); // Wait for 8 seconds
