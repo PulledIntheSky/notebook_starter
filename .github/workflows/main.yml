@@ -21,17 +21,27 @@ jobs:
 
       - name: Run Docker containers and capture screenshots
         run: |
-          for ((i=1; i<=10; i++)); do
+          for ((i=1; i<=50; i++)); do
             docker run -d --name container_$i \
               -v $(pwd)/screenshots:/screenshots \
-              --shm-size=2g \
-              --privileged \
-              jess/tor-browser \
+              --net=host \
+              dperson/torproxy \
               bash -c "\
                 export DISPLAY=:99 && \
                 Xvfb :99 -screen 0 1024x768x24 & \
                 sleep 5 && \
-                /usr/bin/tor-browser --headless --screenshot https://www.whatismyipaddress.com/ --output /screenshots/screenshot_$i.png"
+                python3 -c 'from selenium import webdriver; \
+                            options = webdriver.FirefoxOptions(); \
+                            options.headless = True; \
+                            profile = webdriver.FirefoxProfile(); \
+                            profile.set_preference(\"network.proxy.type\", 1); \
+                            profile.set_preference(\"network.proxy.socks\", \"localhost\"); \
+                            profile.set_preference(\"network.proxy.socks_port\", 9050); \
+                            driver = webdriver.Firefox(firefox_profile=profile, options=options); \
+                            driver.get(\"https://www.whatismyipaddress.com/\"); \
+                            driver.implicitly_wait(10); \
+                            driver.save_screenshot(\"/screenshots/screenshot_$i.png\"); \
+                            driver.quit();'"
 
             sleep 10  # Adjust as necessary to wait for the screenshot capture
           done
