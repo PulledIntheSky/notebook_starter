@@ -26,7 +26,7 @@ jobs:
               cd /tmp/screenshots && \
               wget -q https://www.whatismyipaddress.com -O index.html && \
               sleep 6 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot $(date +%s)_screenshot.png && \
+              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot --window-size=1920,1080 $(date +%s)_screenshot.png && \
               mv *.png /tmp/screenshots/"
           done
 
