@@ -34,6 +34,7 @@ jobs:
                             const browser = await puppeteer.launch(); \
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
+                            await page.waitForTimeout(8000); // Wait for 8 seconds
                             await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
                             await browser.close(); \
                           })();'"
@@ -51,8 +52,8 @@ jobs:
             if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
               # Ensure screenshots directory exists on host
               sudo mkdir -p screenshots/container_$i
-              # Copy all PNG files from container to host
-              docker cp container_$i:/tmp/screenshots/*.png screenshots/container_$i/
+              # Copy all files from container's /tmp/screenshots/ to host
+              docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
             else
               echo "Container container_$i does not exist or is not running."
             fi
