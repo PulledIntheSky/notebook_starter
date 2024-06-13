@@ -34,10 +34,7 @@ jobs:
           options.headless = True
 
           # Start Firefox WebDriver
-          driver = webdriver.Remote(
-              command_executor='http://localhost:4444/wd/hub',
-              desired_capabilities=options.to_capabilities()
-          )
+          driver = webdriver.Firefox(options=options)
 
           # Navigate to the webpage
           driver.get("https://www.whatismyipaddress.com")
