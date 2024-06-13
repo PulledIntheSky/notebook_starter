@@ -52,5 +52,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: $HOME/screenshots
+          path: screenshots
           if-no-files-found: error  # Fail workflow if no files are found
