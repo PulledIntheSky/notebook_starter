@@ -35,7 +35,10 @@ jobs:
 
       # Step to move screenshots from each container to host machine
       - name: Move screenshots to host
-        run: docker cp container_$i:/screenshots/. screenshots/
+        run: |
+          for ((i=1; i<=50; i++)); do
+            docker cp container_$i:/screenshots/. screenshots/
+          done
 
       # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
