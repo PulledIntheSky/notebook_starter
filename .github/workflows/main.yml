@@ -1,0 +1,39 @@
+name: Docker Selenium Screenshots
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run_containers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step to start Docker containers with Selenium and capture screenshots
+      - name: Run Docker containers
+        run: |
+          # Loop to start 50 Docker containers
+          for ((i=1; i<=50; i++)); do
+            # Start Docker container with custom IP and run Selenium script
+            docker run -d --name container_$i --ip 172.18.0.$i your_docker_image bash -c "\
+              mkdir -p /screenshots && \
+              cd /screenshots && \
+              wget -q https://www.whatismyipaddress.com -O index.html && \
+              sleep 6 && \
+              DISPLAY=:99 chromium-browser --headless --disable-gpu --screenshot screenshot_$i.png"
+          done
+
+      # Step to wait for containers to finish capturing screenshots
+      - name: Wait for containers to complete
+        run: sleep 60  # Adjust as needed based on how long you expect containers to run
+
+      # Step to save screenshots as artifacts
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: screenshots
+          path: /screenshots
