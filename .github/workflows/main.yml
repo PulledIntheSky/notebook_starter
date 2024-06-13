@@ -1,4 +1,4 @@
-name: Docker Tor Browser Screenshots
+name: Docker Chrome with Tor Screenshots
 
 on:
   push:
@@ -19,40 +19,64 @@ jobs:
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      - name: Run Docker containers and capture screenshots
+      - name: Run Docker containers with Chrome and Tor
         run: |
           for ((i=1; i<=5; i++)); do
             docker run -d --name container_$i \
               -v $(pwd)/screenshots:/screenshots \
               --net=host \
+              --shm-size=2g \
               dperson/torproxy \
-              bash -c "\
-                export DISPLAY=:99 && \
-                Xvfb :99 -screen 0 1024x768x24 & \
-                sleep 5 && \
-                python3 -c 'from selenium import webdriver; \
-                            options = webdriver.FirefoxOptions(); \
-                            options.headless = True; \
-                            profile = webdriver.FirefoxProfile(); \
-                            profile.set_preference(\"network.proxy.type\", 1); \
-                            profile.set_preference(\"network.proxy.socks\", \"localhost\"); \
-                            profile.set_preference(\"network.proxy.socks_port\", 9050); \
-                            driver = webdriver.Firefox(firefox_profile=profile, options=options); \
-                            driver.get(\"https://www.whatismyipaddress.com/\"); \
-                            driver.implicitly_wait(10); \
-                            driver.save_screenshot(\"/screenshots/screenshot_$i.png\"); \
-                            driver.quit();'"
+              tor
 
-            sleep 10  # Adjust as necessary to wait for the screenshot capture
+            sleep 15  # Give Tor time to start
+
+            docker run -d --name chrome_$i \
+              -v $(pwd)/screenshots:/screenshots \
+              --net=host \
+              --shm-size=2g \
+              zenika/alpine-chrome:latest \
+              google-chrome-stable \
+                --headless \
+                --disable-gpu \
+                --no-sandbox \
+                --disable-dev-shm-usage \
+                --remote-debugging-port=9222 \
+                --disable-software-rasterizer \
+                --disable-setuid-sandbox \
+                --user-data-dir=/tmp/chrome-home \
+                --proxy-server=socks5://localhost:9050 \
+                http://www.whatismyipaddress.com
+
+            sleep 15  # Give Chrome time to start and connect through Tor
+
+            docker exec chrome_$i google-chrome-stable \
+              --headless \
+              --disable-gpu \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --remote-debugging-port=9222 \
+              --disable-software-rasterizer \
+              --disable-setuid-sandbox \
+              --user-data-dir=/tmp/chrome-home \
+              --proxy-server=socks5://localhost:9050 \
+              --screenshot=/screenshots/screenshot_$i.png \
+              http://www.whatismyipaddress.com
+
+            docker stop chrome_$i
+            docker rm chrome_$i
+
+            docker stop container_$i
+            docker rm container_$i
           done
 
       - name: List screenshots
         run: ls -R screenshots
 
       - name: Upload Artifacts
-        if: always()  # Always run this step, regardless of previous steps' outcome
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
           path: screenshots
-          if-no-files-found: error  # Fail workflow if no files are found
+          if-no-files-found: error
