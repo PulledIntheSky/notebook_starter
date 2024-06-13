@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2r
+        uses: actions/checkout@v2
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
