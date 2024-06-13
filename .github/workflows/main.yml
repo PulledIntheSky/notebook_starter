@@ -20,24 +20,22 @@ jobs:
         run: mkdir -p screenshots
 
       - name: Run Tor Proxy Container
-        run: |
-          docker run -d --name tor_proxy --net=host --rm dperson/torproxy
+        run: docker run -d --name tor_proxy --net=host --rm dperson/torproxy
 
       - name: Wait for Tor Proxy to Start
         run: sleep 10
 
       - name: Run Puppeteer Container and Capture Screenshots
         run: |
-          for ((i=1; i<=5; i++)); do
+          for ((i=1; i<=50; i++)); do
             docker run -d --name puppeteer_$i \
               -v $(pwd)/screenshots:/screenshots \
               --net=host \
               alekzonder/puppeteer:latest \
               bash -c "\
+                mkdir -p /tmp/screenshots && \
                 cd /tmp/screenshots && \
-                node -e 'const puppeteer = require(\"puppeteer-extra\"); \
-                          const StealthPlugin = require(\"puppeteer-extra-plugin-stealth\"); \
-                          puppeteer.use(StealthPlugin()); \
+                node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ \
                               headless: true, \
@@ -50,13 +48,17 @@ jobs:
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(10000); // Wait for 10 seconds \
-                            await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
+                            await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
                             await browser.close(); \
                           })();'"
 
-            sleep 12  # Allow time for Puppeteer to launch and capture screenshot
+            # Wait for Puppeteer to capture and save the screenshot
+            sleep 12
 
-            docker cp puppeteer_$i:/tmp/screenshots/screenshot_$i.png screenshots/
+            # Copy the screenshot from container to host
+            docker cp puppeteer_$i:/tmp/screenshots/screenshot.png screenshots/screenshot_$i.png
+
+            # Remove the Puppeteer container
             docker rm -f puppeteer_$i
           done
 
