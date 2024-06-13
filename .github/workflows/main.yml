@@ -40,24 +40,24 @@ jobs:
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(10000); // Wait for 10 seconds \
                             await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
-                            await page.waitForTimeout(5000); // Wait for 5 seconds \
                             console.log(\"Screenshot saved for container puppeteer_$i\"); \
+                            await page.waitForTimeout(4000); // Wait for 4 seconds \
                             await browser.close(); \
                           })();' 2>&1")
 
             container_ids+=("$container_id")
           done
 
-          echo "::set-output name=container_ids::${container_ids[*]}"
+          echo "CONTAINER_IDS=${container_ids[*]}" >> $GITHUB_ENV
 
       - name: Wait for Puppeteer Containers to Finish
         run: sleep 120  # Adjust as needed based on the expected runtime of Puppeteer processes
 
       - name: Retrieve Screenshots from Containers
         run: |
-          container_ids="${{ steps.puppeteer_containers.outputs.container_ids }}"
+          container_ids=($CONTAINER_IDS)
 
-          for container_id in $container_ids; do
+          for container_id in "${container_ids[@]}"; do
             # Check if container exists and is running or stopped
             if docker ps -a --format '{{.Names}}' | grep -Eq "^$container_id$"; then
               # Ensure screenshots directory exists on host
