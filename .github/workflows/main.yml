@@ -32,11 +32,11 @@ jobs:
 
       - name: Take screenshot
         run: |
-          docker exec $(docker ps -qf "name=firefox") firefox --screenshot /tmp/screenshot.png https://www.whatismyipaddress.com
-          docker cp $(docker ps -qf "name=firefox"):/tmp/screenshot.png ./screenshots/screenshot.png
+          docker exec $(docker ps -qf "name=firefox-container") firefox --screenshot /tmp/screenshot.png https://www.whatismyipaddress.com
+          docker cp $(docker ps -qf "name=firefox-container"):/tmp/screenshot.png ./screenshots/screenshot.png
 
       - name: Stop and remove Firefox container
-        run: docker stop $(docker ps -qf "name=firefox")
+        run: docker stop $(docker ps -qf "name=firefox-container")
 
       - name: Upload screenshot artifact
         uses: actions/upload-artifact@v2
