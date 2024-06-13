@@ -13,6 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      # Step to create empty screenshots directory (if not exists)
+      - name: Create screenshots directory
+        run: mkdir -p screenshots
+
       # Step to start Docker containers with Puppeteer and capture screenshots
       - name: Run Docker containers
         run: |
@@ -42,11 +46,11 @@ jobs:
       # Step to move screenshots from each container to host machine
       - name: Move screenshots to host
         run: |
-          mkdir -p screenshots  # Ensure screenshots directory exists
+          sudo mkdir -p screenshots  # Ensure screenshots directory exists
           cd screenshots  # Change directory to screenshots
 
           for ((i=1; i<=50; i++)); do
-            mkdir -p container_$i  # Ensure container_$i directory exists
+            sudo mkdir -p container_$i  # Ensure container_$i directory exists
             docker cp container_$i:/tmp/screenshots/. container_$i/
           done
 
