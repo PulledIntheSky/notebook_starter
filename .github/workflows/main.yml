@@ -1,4 +1,4 @@
-name: Docker Puppeteer with Tor Screenshots
+name: Docker Puppeteer Screenshots
 
 on:
   push:
@@ -19,20 +19,13 @@ jobs:
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      - name: Run Tor Proxy Container
-        run: docker run -d --name tor_proxy --net=host --rm dperson/torproxy
-
-      - name: Wait for Tor Proxy to Start
-        run: sleep 10
-
       - name: Run Puppeteer Containers and Capture Screenshots
         id: puppeteer_containers
         run: |
           container_ids=()
-          for ((i=1; i<=5; i++)); do
+          for ((i=1; i<=50; i++)); do
             docker run -d --name puppeteer_$i \
               -v $(pwd)/screenshots:/screenshots \
-              --net=host \
               alekzonder/puppeteer:latest \
               bash -c "\
                 mkdir -p /tmp/screenshots && \
@@ -40,17 +33,13 @@ jobs:
                 node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ \
-                              headless: true, \
-                              args: [ \
-                                \"--proxy-server=socks5://localhost:9050\", \
-                                \"--no-sandbox\", \
-                                \"--disable-setuid-sandbox\" \
-                              ] \
+                              headless: true \
                             }); \
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(10000); // Wait for 10 seconds \
                             await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
+                            await page.waitForTimeout(4000); // Wait for 10 seconds \
                             await browser.close(); \
                           })();'"
 
@@ -88,6 +77,3 @@ jobs:
           name: screenshots
           path: screenshots
           if-no-files-found: error
-
-      - name: Cleanup Tor Proxy Container
-        run: docker stop tor_proxy
