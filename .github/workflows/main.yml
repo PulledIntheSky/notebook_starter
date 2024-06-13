@@ -1,4 +1,4 @@
-name: Docker Selenium Screenshots with Ngrok
+name: Docker Selenium Screenshot Test with Ngrok
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  run_containers:
+  run_container:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,33 +29,27 @@ jobs:
           sleep 10
           NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
           echo "NGROK_URL=$NGROK_URL" >> $GITHUB_ENV
+          echo "Ngrok tunnel URL: $NGROK_URL"
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      # Step to start Docker containers with Selenium and capture screenshots
-      - name: Run Docker containers
+      # Step to start a Docker container with Selenium and capture a screenshot
+      - name: Run Docker container
         run: |
-          for ((i=1; i<=50; i++)); do
-            docker run -d --name container_$i selenium/standalone-chrome:latest bash -c "\
-              mkdir -p /tmp/screenshots && \
-              sleep 10 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/$(date +%s)_screenshot.png ${NGROK_URL} && \
-              mv /tmp/screenshots/*.png /tmp/screenshots/"
-          done
+          docker run -d --name test_container --network host selenium/standalone-chrome:latest bash -c "\
+            mkdir -p /tmp/screenshots && \
+            sleep 20 && \
+            DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/screenshot.png ${NGROK_URL} && \
+            mv /tmp/screenshots/*.png /tmp/screenshots/"
+          sleep 30  # Ensure the container has enough time to take the screenshot
 
-      # Step to wait for containers to finish capturing screenshots
-      - name: Wait for containers to complete
-        run: sleep 120
-
-      # Step to move screenshots from each container to host machine
-      - name: Move screenshots to host
+      # Step to move screenshot from the container to the host machine
+      - name: Move screenshot to host
         run: |
-          for ((i=1; i<=50; i++)); do
-            mkdir -p screenshots/container_$i  # Ensure container_$i directory exists
-            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
-          done
+          mkdir -p screenshots/test_container  # Ensure directory exists
+          docker cp test_container:/tmp/screenshots/. screenshots/test_container/
 
       # Step to list screenshots for verification
       - name: List screenshots
@@ -63,7 +57,6 @@ jobs:
 
       # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
-        if: success()  # Only run if previous steps were successful
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
