@@ -35,9 +35,10 @@ jobs:
                             await page.waitForTimeout(8000); // Wait for 8 seconds
                             await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
                             await browser.close(); \
+                            console.log(\"Screenshot captured\"); // Log success
                           })();'"
 
-            # Delay for Puppeteer to complete
+            # Delay after Puppeteer operations (adjust as necessary)
             sleep 10
 
             # Check if container exists and is running or stopped
@@ -46,6 +47,7 @@ jobs:
               mkdir -p screenshots/container_$i
               # Copy screenshot from container to host
               docker cp container_$i:/tmp/screenshots/screenshot_$i.png screenshots/container_$i/
+              echo "Screenshot copied from container_$i"
             else
               echo "Container container_$i does not exist or is not running."
             fi
