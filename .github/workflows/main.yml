@@ -18,7 +18,7 @@ jobs:
         run: mkdir -p screenshots
 
       # Step to start Docker containers with Selenium and capture screenshots using Puppeteer
-      - name: Run Docker containers
+      - name: Run Docker containers and capture screenshots
         run: |
           for ((i=1; i<=50; i++)); do
             docker run -d --rm --name container_$i \
@@ -37,20 +37,10 @@ jobs:
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
                             await browser.close(); \
-                          })();'"
+                          })();' && \
+                mkdir -p /screenshots/container_$i && \
+                cp /tmp/screenshots/*.png /screenshots/container_$i/"
             sleep 1
-          done
-
-      # Step to wait for containers to finish capturing screenshots
-      - name: Wait for containers to complete
-        run: sleep 60
-
-      # Step to move screenshots from each container to host machine
-      - name: Move screenshots to host
-        run: |
-          for ((i=1; i<=50; i++)); do
-            mkdir -p "screenshots/container_$i"  # Ensure container_$i directory exists
-            docker cp container_$i:/tmp/screenshots/. "screenshots/container_$i/"
           done
 
       # Step to list screenshots for verification
