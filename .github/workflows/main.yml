@@ -35,29 +35,34 @@ jobs:
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      # Step to start a Docker container with Selenium and capture a screenshot
-      - name: Run Docker container
+      # Step to start Docker containers with Selenium and capture screenshots
+      - name: Run Docker containers
         run: |
-          docker run -d --name test_container --network host selenium/standalone-chrome:latest bash -c "\
-            mkdir -p /tmp/screenshots && \
-            sleep 20 && \
-            DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/screenshot.png ${NGROK_URL} && \
-            cat /tmp/screenshots/screenshot.png && \
-            mv /tmp/screenshots/*.png /tmp/screenshots/"
-          sleep 30  # Ensure the container has enough time to take the screenshot
+          for ((i=1; i<=50; i++)); do
+            docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
+              mkdir -p /tmp/screenshots && \
+              sleep 30 && \
+              DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/screenshot_$i.png ${NGROK_URL} && \
+              echo 'Screenshot taken for container_$i' && \
+              ls -l /tmp/screenshots && \
+              mv /tmp/screenshots/*.png /tmp/screenshots/"
+          done
+          sleep 60  # Ensure all containers have enough time to take the screenshots
 
-      # Step to move screenshot from the container to the host machine
-      - name: Move screenshot to host
+      # Step to move screenshots from each container to host machine
+      - name: Move screenshots to host
         run: |
-          mkdir -p screenshots/test_container  # Ensure directory exists
-          docker cp test_container:/tmp/screenshots/. screenshots/test_container/
+          for ((i=1; i<=50; i++)); do
+            mkdir -p screenshots/container_$i  # Ensure directory exists
+            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
+          done
 
       # Step to list screenshots for verification
       - name: List screenshots
         run: ls -R screenshots
 
       # Step to save screenshots as artifacts if they exist
-        - name: Upload Artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
