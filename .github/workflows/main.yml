@@ -16,50 +16,30 @@ jobs:
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      - name: Run Docker containers
+      - name: Run Single Docker Container
         run: |
-          for ((i=1; i<=50; i++)); do
-            docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
-              apt-get update && \
-              apt-get install -y python3-pip && \
-              pip3 install selenium undetected-chromedriver && \
-              mkdir -p /tmp/screenshots && \
-              python3 -c '\
-                import undetected_chromedriver.v2 as uc; \
-                from selenium.webdriver.common.by import By; \
-                import time; \
-                options = uc.ChromeOptions(); \
-                options.add_argument(\"--headless\"); \
-                options.add_argument(\"--no-sandbox\"); \
-                options.add_argument(\"--disable-dev-shm-usage\"); \
-                driver = uc.Chrome(options=options); \
-                driver.get(\"https://www.whatismyipaddress.com\"); \
-                time.sleep(10); \
-                screenshot_path = \"/tmp/screenshots/screenshot_$i.png\"; \
-                driver.save_screenshot(screenshot_path); \
-                driver.quit(); \
-                print(f\"Screenshot saved to {screenshot_path}\")' && \
-                ls -l /tmp/screenshots"
-          done
-          sleep 120
-
-      - name: Move screenshots to host
-        run: |
-          for ((i=1; i<=50; i++)); do
-            if docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/; then
-              echo "Copied screenshots from container_$i"
-            else
-              echo "Failed to copy screenshots from container_$i"
-              docker logs container_$i
-            fi
-          done
-
-      - name: List screenshots
-        run: ls -R screenshots
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: screenshots
-          path: screenshots
-          if-no-files-found: error
+          docker run -d --name container_test --network host selenium/standalone-chrome:latest bash -c "\
+            apt-get update && \
+            apt-get install -y python3-pip && \
+            pip3 install selenium undetected-chromedriver && \
+            mkdir -p /tmp/screenshots && \
+            python3 -c '\
+              import undetected_chromedriver.v2 as uc; \
+              from selenium.webdriver.common.by import By; \
+              import time; \
+              options = uc.ChromeOptions(); \
+              options.add_argument(\"--headless\"); \
+              options.add_argument(\"--no-sandbox\"); \
+              options.add_argument(\"--disable-dev-shm-usage\"); \
+              driver = uc.Chrome(options=options); \
+              driver.get(\"https://www.whatismyipaddress.com\"); \
+              time.sleep(10); \
+              screenshot_path = \"/tmp/screenshots/screenshot_test.png\"; \
+              driver.save_screenshot(screenshot_path); \
+              driver.quit(); \
+              print(f\"Screenshot saved to {screenshot_path}\")' && \
+              ls -l /tmp/screenshots"
+          sleep 60
+          docker cp container_test:/tmp/screenshots/. screenshots/container_test/
+          docker logs container_test
+          ls -R screenshots
