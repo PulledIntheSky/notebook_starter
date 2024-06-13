@@ -28,8 +28,7 @@ jobs:
               -v /tmp/screenshots:/tmp/screenshots \
               alekzonder/puppeteer:latest \
               bash -c "\
-                mkdir -p /tmp/screenshots && \
-                cd /tmp/screenshots && \
+                chmod +x tmp/screenshots \
                 node -e 'const puppeteer = require(\"puppeteer\"); \
                           (async () => { \
                             const browser = await puppeteer.launch({ headless: true }); \
