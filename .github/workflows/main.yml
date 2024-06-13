@@ -26,9 +26,9 @@ jobs:
         run: |
           ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
           nohup ngrok http https://www.whatismyipaddress.com &
-          sleep 16
+          sleep 10
           NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
-          echo $NGROK_URL
+          echo "NGROK_URL=$NGROK_URL" >> $GITHUB_ENV
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
@@ -37,19 +37,17 @@ jobs:
       # Step to start Docker containers with Selenium and capture screenshots
       - name: Run Docker containers
         run: |
-          NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
           for ((i=1; i<=50; i++)); do
-            docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
+            docker run -d --name container_$i selenium/standalone-chrome:latest bash -c "\
               mkdir -p /tmp/screenshots && \
-              cd /tmp/screenshots && \
-              sleep 16 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot=/tmp/screenshots/$(date +%s)_screenshot.png ${NGROK_URL} && \
+              sleep 10 && \
+              DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/$(date +%s)_screenshot.png ${NGROK_URL} && \
               mv /tmp/screenshots/*.png /tmp/screenshots/"
           done
 
       # Step to wait for containers to finish capturing screenshots
       - name: Wait for containers to complete
-        run: sleep 60
+        run: sleep 120
 
       # Step to move screenshots from each container to host machine
       - name: Move screenshots to host
