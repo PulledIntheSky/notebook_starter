@@ -35,9 +35,10 @@ jobs:
                 driver = uc.Chrome(options=options); \
                 driver.get(\"https://www.whatismyipaddress.com\"); \
                 time.sleep(10); \
-                driver.save_screenshot(\"/tmp/screenshots/screenshot_$i.png\"); \
-                driver.quit()' && \
-                echo 'Screenshot taken for container_$i' && \
+                screenshot_path = \"/tmp/screenshots/screenshot_$i.png\"; \
+                driver.save_screenshot(screenshot_path); \
+                driver.quit(); \
+                print(f\"Screenshot saved to {screenshot_path}\")' && \
                 ls -l /tmp/screenshots"
           done
           sleep 120
@@ -45,7 +46,12 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
+            if docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/; then
+              echo "Copied screenshots from container_$i"
+            else
+              echo "Failed to copy screenshots from container_$i"
+              docker logs container_$i
+            fi
           done
 
       - name: List screenshots
