@@ -19,18 +19,16 @@ jobs:
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      - name: Run Docker containers with Chrome and Tor
+      - name: Run Tor Proxy Container
         run: |
-          for ((i=1; i<=5; i++)); do
-            docker run -d --name container_$i \
-              -v $(pwd)/screenshots:/screenshots \
-              --net=host \
-              --shm-size=2g \
-              dperson/torproxy \
-              tor
+          docker run -d --name tor_proxy --net=host --rm dperson/torproxy
 
-            sleep 15  # Give Tor time to start
+      - name: Wait for Tor Proxy to Start
+        run: sleep 10
 
+      - name: Run Chrome Container and Capture Screenshots
+        run: |
+          for ((i=1; i<=50; i++)); do
             docker run -d --name chrome_$i \
               -v $(pwd)/screenshots:/screenshots \
               --net=host \
@@ -48,7 +46,7 @@ jobs:
                 --proxy-server=socks5://localhost:9050 \
                 http://www.whatismyipaddress.com
 
-            sleep 15  # Give Chrome time to start and connect through Tor
+            sleep 10  # Adjust as needed to ensure Chrome connects through Tor
 
             docker exec chrome_$i google-chrome-stable \
               --headless \
@@ -65,9 +63,6 @@ jobs:
 
             docker stop chrome_$i
             docker rm chrome_$i
-
-            docker stop container_$i
-            docker rm container_$i
           done
 
       - name: List screenshots
@@ -80,3 +75,6 @@ jobs:
           name: screenshots
           path: screenshots
           if-no-files-found: error
+
+      - name: Cleanup Tor Proxy Container
+        run: docker stop tor_proxy
