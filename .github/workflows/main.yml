@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Puppeteer Container and Capture Screenshots
         run: |
-          for ((i=1; i<=50; i++)); do
+          for ((i=1; i<=5; i++)); do
             docker run -d --name puppeteer_$i \
               -v $(pwd)/screenshots:/screenshots \
               --net=host \
