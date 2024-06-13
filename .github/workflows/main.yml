@@ -1,70 +1,60 @@
-name: Docker Selenium Screenshots
+name: Firefox Selenium Screenshot
 
 on:
   push:
     branches:
-      - main
+      - main  # Adjust branch name as needed
 
 jobs:
-  run_containers:
+  capture_screenshot:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Step to create screenshots directory (if not exists)
-      - name: Create screenshots directory
-        run: mkdir -p screenshots
-
-      # Step to start Docker containers with Selenium
-      - name: Run Docker containers
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11.5'  # Specify Python version
+        
+      - name: Install dependencies
         run: |
-          # Start Docker containers with Selenium Standalone Chrome
-          for ((i=1; i<=50; i++)); do
-            docker run -d --name container_$i --network host selenium/standalone-chrome:latest
-          done
-
-      # Step to wait for containers to be ready
-      - name: Wait for containers to be ready
-        run: sleep 60  # Adjust timing based on your Docker container startup time
-
-      # Step to capture screenshots from each container
-      - name: Capture Screenshots
+          python -m pip install --upgrade pip
+          pip install selenium
+        
+      - name: Run Selenium script
         run: |
-          for ((i=1; i<=50; i++)); do
-            mkdir -p screenshots/container_$i
-            docker exec container_$i bash -c "\
-              mkdir -p /tmp/screenshots && \
-              apt-get update && apt-get install -y python3-pip && \
-              pip3 install selenium undetected-chromedriver && \
-              python3 -c '\
-                import undetected_chromedriver.v2 as uc; \
-                from selenium.webdriver.common.by import By; \
-                import time; \
-                options = uc.ChromeOptions(); \
-                options.add_argument(\"--headless\"); \
-                options.add_argument(\"--no-sandbox\"); \
-                options.add_argument(\"--disable-dev-shm-usage\"); \
-                driver = uc.Chrome(options=options); \
-                driver.get(\"https://www.whatismyipaddress.com\"); \
-                time.sleep(10); \
-                screenshot_path = \"/tmp/screenshots/screenshot_$i.png\"; \
-                driver.save_screenshot(screenshot_path); \
-                driver.quit(); \
-                print(f\"Screenshot saved to {screenshot_path}\")'"
-            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
-          done
+          python <<EOF
+          from selenium import webdriver
+          import time
 
-      # Step to list screenshots for verification
-      - name: List screenshots
-        run: ls -R screenshots
+          # Setup WebDriver options for Firefox
+          options = webdriver.FirefoxOptions()
+          options.headless = True
 
-      # Step to save screenshots as artifacts if they exist
-      - name: Upload Artifacts
-        if: success()  # Only run if previous steps were successful
+          # Start Firefox WebDriver
+          driver = webdriver.Remote(
+              command_executor='http://localhost:4444/wd/hub',
+              desired_capabilities=options.to_capabilities()
+          )
+
+          # Navigate to the webpage
+          driver.get("https://www.whatismyipaddress.com")
+          time.sleep(10)  # Wait for the page to load
+
+          # Capture screenshot
+          screenshot_path = "/tmp/screenshots/screenshot_firefox.png"
+          driver.save_screenshot(screenshot_path)
+          print(f"Screenshot saved to {screenshot_path}")
+
+          # Quit WebDriver
+          driver.quit()
+          EOF
+
+      - name: Upload screenshot artifact
+        if: success()  # Upload only if previous steps were successful
         uses: actions/upload-artifact@v2
         with:
-          name: screenshots
-          path: screenshots
-          if-no-files-found: error  # Fail workflow if no files are found
+          name: firefox-screenshot
+          path: /tmp/screenshots/screenshot_firefox.png
