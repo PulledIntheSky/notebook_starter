@@ -1,61 +1,45 @@
-name: Firefox Selenium Screenshot
+name: Firefox Screenshot
 
 on:
   push:
     branches:
-      - main
+      - main  # Adjust branch name as needed
 
 jobs:
-  capture_screenshot:
+  take_screenshot:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'  # Ensure this matches your Python script requirements
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-      - name: Install Firefox and geckodriver
+      - name: Build the Docker image
+        run: docker build -t firefox-container .
+
+      - name: Run Firefox in Docker
         run: |
-          sudo apt-get update
-          sudo apt-get install firefox -y
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
-          tar -xvzf geckodriver-v0.30.0-linux64.tar.gz
-          sudo mv geckodriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/geckodriver
+          docker run -d --rm \
+            --name firefox \
+            -e DISPLAY=:99 \
+            -v /tmp/.X11-unix:/tmp/.X11-unix \
+            firefox-container
 
-      - name: Install dependencies
+      - name: Wait for Firefox to start
+        run: sleep 10
+
+      - name: Take screenshot
         run: |
-          python -m pip install --upgrade pip
-          pip install selenium
+          docker exec firefox firefox --screenshot /tmp/screenshot.png https://www.whatismyipaddress.com
+          docker cp firefox:/tmp/screenshot.png ./screenshots/screenshot.png
 
-      - name: Run Selenium script
-        run: |
-          python3 <<EOF
-          from selenium import webdriver
-          import time
-
-          options = webdriver.FirefoxOptions()
-          options.headless = True
-
-          driver = webdriver.Firefox(options=options)
-
-          driver.get("https://www.whatismyipaddress.com")
-          time.sleep(10)
-
-          screenshot_path = "/tmp/screenshots/screenshot_firefox.png"
-          driver.save_screenshot(screenshot_path)
-          print(f"Screenshot saved to {screenshot_path}")
-
-          driver.quit()
-          EOF
+      - name: Stop and remove Firefox container
+        run: docker stop firefox
 
       - name: Upload screenshot artifact
-        if: success()  # Upload only if previous steps were successful
         uses: actions/upload-artifact@v2
         with:
           name: firefox-screenshot
-          path: /tmp/screenshots/screenshot_firefox.png
+          path: screenshots/screenshot.png
