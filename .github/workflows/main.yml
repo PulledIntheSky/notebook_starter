@@ -48,15 +48,10 @@ jobs:
       - name: Move screenshots to host
         run: |
           for ((i=1; i<=50; i++)); do
-            # Check if container exists and is running or stopped
-            if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
-              # Ensure screenshots directory exists on host
-              sudo mkdir -p screenshots/container_$i
-              # Copy all files from container's /tmp/screenshots/ to host
-              docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
-            else
-              echo "Container container_$i does not exist or is not running."
-            fi
+            # Ensure screenshots directory exists on host
+            sudo mkdir -p screenshots/container_$i
+            # Copy all files from container's /tmp/screenshots/ to host
+            docker cp container_$i:/tmp/screenshots/. screenshots/container_$i/
           done
 
       # Step to list screenshots for verification
@@ -69,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: screenshots/
+          path: screenshots
           if-no-files-found: error  # Fail workflow if no files are found
