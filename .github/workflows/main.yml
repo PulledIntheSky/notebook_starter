@@ -17,12 +17,12 @@ jobs:
       - name: Run Docker containers
         run: |
           for ((i=1; i<=50; i++)); do
-            docker run -d --name container_$i --ip 172.18.0.$i your_docker_image bash -c "\
+            docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
               mkdir -p /screenshots && \
               cd /screenshots && \
               wget -q https://www.whatismyipaddress.com -O index.html && \
               sleep 6 && \
-              DISPLAY=:99 chromium-browser --headless --disable-gpu --screenshot screenshot_$i.png"
+              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot screenshot_$i.png"
           done
 
       # Step to wait for containers to finish capturing screenshots
