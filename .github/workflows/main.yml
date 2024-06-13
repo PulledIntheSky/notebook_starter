@@ -50,8 +50,12 @@ jobs:
       # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
         if: success()  # Only run if previous steps were successful
+        run: |
+          ls -R screenshots  # List screenshots for debugging
+          cp -r screenshots/* $GITHUB_WORKSPACE/screenshots  # Copy screenshots to workspace
+          ls -R $GITHUB_WORKSPACE/screenshots  # List copied screenshots
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
-          path: screenshots
+          path: $GITHUB_WORKSPACE/screenshots
           if-no-files-found: error  # Fail workflow if no files are found
