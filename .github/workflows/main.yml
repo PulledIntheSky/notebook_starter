@@ -1,4 +1,4 @@
-name: Docker Puppeteer Screenshots
+name: Docker Selenium Screenshots
 
 on:
   push:
@@ -13,67 +13,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup Docker
-        uses: docker/setup-buildx-action@v1
-
+      # Step to create empty screenshots directory (if not exists)
       - name: Create screenshots directory
         run: mkdir -p screenshots
 
-      - name: Run Puppeteer Containers and Capture Screenshots
-        id: puppeteer_containers
+      # Step to start Docker containers with Selenium and capture screenshots
+      - name: Run Docker containers
         run: |
-          container_ids=()
           for ((i=1; i<=4; i++)); do
-            container_id=$(docker run -d --name puppeteer_$i \
-              -v $(pwd)/screenshots:/screenshots \
-              alekzonder/puppeteer:latest \
-              bash -c "\
-                mkdir -p /tmp/screenshots && \
-                node -e 'const puppeteer = require(\"puppeteer\"); \
-                          (async () => { \
-                            const browser = await puppeteer.launch({ \
-                              headless: true \
-                            }); \
-                            const page = await browser.newPage(); \
-                            await page.goto(\"https://www.whatismyipaddress.com\"); \
-                            await page.waitForTimeout(10000); // Wait for 10 seconds \
-                            await page.screenshot({ path: \"/tmp/screenshots/screenshot.png\" }); \
-                            console.log(\"Screenshot saved for container puppeteer_$i\"); \
-                            await page.waitForTimeout(4000); // Wait for 4 seconds \
-                            await browser.close(); \
-                          })();' && \
-                sleep 30")  # Keep container alive for 30 more seconds
-            container_ids+=("$container_id")
+            docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
+              mkdir -p /screenshots && \
+              cd /screenshots && \
+              wget -q https://www.whatismyipaddress.com -O index.html && \
+              sleep 6 && \
+              DISPLAY=:99 google-chrome --headless --disable-gpu --screenshot $(date +%s)_screenshot.png"
           done
 
-          echo "CONTAINER_IDS=${container_ids[*]}" >> $GITHUB_ENV
+      # Step to wait for containers to finish capturing screenshots
+      - name: Wait for containers to complete
+        run: sleep 60
 
-      - name: Wait for Puppeteer Containers to Finish
-        run: sleep 120  # Adjust as needed based on the expected runtime of Puppeteer processes
-
-      - name: Retrieve Screenshots from Containers
+      # Step to move screenshots from each container to host machine
+      - name: Move screenshots to host
         run: |
-          container_ids=($CONTAINER_IDS)
-
-          for container_id in "${container_ids[@]}"; do
-            # Check if container exists and is running or stopped
-            if docker ps -a --format '{{.Names}}' | grep -Eq "^$container_id$"; then
-              # Ensure screenshots directory exists on host
-              mkdir -p screenshots/$container_id
-              # Copy screenshot from container to host
-              docker cp $container_id:/tmp/screenshots/screenshot.png screenshots/$container_id/
-            else
-              echo "Container $container_id does not exist or is not running."
-            fi
+          for ((i=1; i<=50; i++)); do
+            docker cp container_$i:/screenshots/. screenshots/
           done
 
-      - name: List screenshots
-        run: ls -R screenshots
-
+      # Step to save screenshots as artifacts if they exist
       - name: Upload Artifacts
-        if: always()
+        if: success()  # Only run if previous steps were successful
         uses: actions/upload-artifact@v2
         with:
           name: screenshots
           path: screenshots
-          if-no-files-found: error
+          if-no-files-found: error  # Fail workflow if no files are found
