@@ -1,4 +1,4 @@
-name: Docker Selenium Screenshot Test with Ngrok
+name: Docker Selenium Screenshot Test with Cloudflare Bypass
 
 on:
   push:
@@ -6,30 +6,12 @@ on:
       - main
 
 jobs:
-  run_container:
+  run_containers:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
-      # Step to install Ngrok
-      - name: Install Ngrok
-        run: |
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
-          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-          sudo apt-get update && sudo apt-get install ngrok
-
-      # Step to start Ngrok tunnel
-      - name: Start Ngrok Tunnel
-        id: ngrok
-        run: |
-          ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          nohup ngrok http https://www.whatismyipaddress.com &
-          sleep 10
-          NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
-          echo "NGROK_URL=$NGROK_URL" >> $GITHUB_ENV
-          echo "Ngrok tunnel URL: $NGROK_URL"
 
       # Step to create screenshots directory (if not exists)
       - name: Create screenshots directory
@@ -40,14 +22,27 @@ jobs:
         run: |
           for ((i=1; i<=50; i++)); do
             docker run -d --name container_$i --network host selenium/standalone-chrome:latest bash -c "\
+              apt-get update && \
+              apt-get install -y python3-pip && \
+              pip3 install selenium undetected-chromedriver && \
               mkdir -p /tmp/screenshots && \
-              sleep 30 && \
-              DISPLAY=:99 google-chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --screenshot=/tmp/screenshots/screenshot_$i.png ${NGROK_URL} && \
-              echo 'Screenshot taken for container_$i' && \
-              ls -l /tmp/screenshots && \
-              mv /tmp/screenshots/*.png /tmp/screenshots/"
+              python3 -c '\
+                import undetected_chromedriver.v2 as uc; \
+                from selenium.webdriver.common.by import By; \
+                import time; \
+                options = uc.ChromeOptions(); \
+                options.add_argument("--headless"); \
+                options.add_argument("--no-sandbox"); \
+                options.add_argument("--disable-dev-shm-usage"); \
+                driver = uc.Chrome(options=options); \
+                driver.get(\"https://www.whatismyipaddress.com\"); \
+                time.sleep(10); \
+                driver.save_screenshot(\"/tmp/screenshots/screenshot_$i.png\"); \
+                driver.quit()' && \
+                echo 'Screenshot taken for container_$i' && \
+                ls -l /tmp/screenshots"
           done
-          sleep 60  # Ensure all containers have enough time to take the screenshots
+          sleep 120  # Ensure all containers have enough time to take the screenshots
 
       # Step to move screenshots from each container to host machine
       - name: Move screenshots to host
