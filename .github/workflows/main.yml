@@ -36,7 +36,10 @@ jobs:
                             await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
                             await browser.close(); \
                           })();'"
-            
+
+            # Delay for Puppeteer to complete
+            sleep 10
+
             # Check if container exists and is running or stopped
             if docker ps -a --format '{{.Names}}' | grep -Eq "^container_$i$"; then
               # Ensure screenshots directory exists on host
