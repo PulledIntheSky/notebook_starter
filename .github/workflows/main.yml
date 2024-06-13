@@ -33,7 +33,7 @@ jobs:
                             const page = await browser.newPage(); \
                             await page.goto(\"https://www.whatismyipaddress.com\"); \
                             await page.waitForTimeout(8000); // Wait for 8 seconds
-                            await page.screenshot({ path: \"/tmp/screenshots/screenshot_$i.png\" }); \
+                            await page.screenshot({ path: \"screenshot_$i.png\" }); \
                             await browser.close(); \
                             console.log(\"Screenshot captured\"); // Log success
                           })();'"
